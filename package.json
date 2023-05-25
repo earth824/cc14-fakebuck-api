@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/app.js"
+    "dev": "nodemon src/app.js",
+    "db:sync": "node src/initialize/database.js"
   },
   "keywords": [],
   "author": "",
