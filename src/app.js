@@ -10,7 +10,7 @@ const errorMiddleware = require('./middlewares/error');
 
 const app = express();
 
-if (process.env.NODE_ENV === 'develop') {
+if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
