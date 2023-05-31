@@ -2,6 +2,7 @@ const fs = require('fs');
 const uploadService = require('../services/upload-service');
 const createError = require('../utils/create-error');
 const { User } = require('../models');
+const friendService = require('../services/friend-service');
 
 exports.uploadImage = async (req, res, next) => {
   try {
@@ -30,5 +31,25 @@ exports.uploadImage = async (req, res, next) => {
     if (req.files.coverImage) {
       fs.unlinkSync(req.files.coverImage[0].path);
     }
+  }
+};
+
+exports.getUserProfile = async (req, res, next) => {
+  try {
+    const user = await User.findOne({
+      where: { id: req.params.id },
+      attributes: { exclude: ['password', 'createdAt', 'updatedAt'] }
+    });
+
+    const friends = await friendService.getFriendsByUserId(req.params.id);
+    const statusWithAuthenticatedUser =
+      await friendService.getStatusWithTargetUserByUserId(
+        req.user.id,
+        req.params.id
+      );
+
+    await res.status(200).json({ user, friends, statusWithAuthenticatedUser });
+  } catch (err) {
+    next(err);
   }
 };
