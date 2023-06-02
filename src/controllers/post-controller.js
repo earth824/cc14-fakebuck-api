@@ -1,8 +1,9 @@
 const fs = require('fs');
 
 const createError = require('../utils/create-error');
-const { Post } = require('../models');
+const { Post, User } = require('../models');
 const uploadService = require('../services/upload-service');
+const friendService = require('../services/friend-service');
 
 exports.createPost = async (req, res, next) => {
   try {
@@ -31,5 +32,27 @@ exports.createPost = async (req, res, next) => {
     if (req.file) {
       fs.unlinkSync(req.file.path);
     }
+  }
+};
+
+exports.getAllPostIncludeFriend = async (req, res, next) => {
+  try {
+    // 1 , [2, 3, 4, 5, 6]
+    // SELECT * FROM posts WHERE userId = 1 OR userId = 2 OR userId= 3
+    // SELECT * FROM posts WHERE userId IN (1, 2, 3)
+
+    const friendsId = await friendService.getFriendsIdByUserId(req.user.id);
+    const meIncludeFriendsId = [req.user.id, ...friendsId];
+    const posts = await Post.findAll({
+      where: { userId: meIncludeFriendsId },
+      order: [['createdAt', 'DESC']],
+      include: {
+        model: User
+      }
+    });
+
+    res.status(200).json({ posts });
+  } catch (err) {
+    next(err);
   }
 };
