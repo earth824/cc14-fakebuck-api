@@ -1,7 +1,7 @@
 const fs = require('fs');
 
 const createError = require('../utils/create-error');
-const { Post, User } = require('../models');
+const { Post, User, Like } = require('../models');
 const uploadService = require('../services/upload-service');
 const friendService = require('../services/friend-service');
 
@@ -24,7 +24,12 @@ exports.createPost = async (req, res, next) => {
       value.image = result.secure_url;
     }
 
-    const post = await Post.create(value);
+    const newPost = await Post.create(value);
+    const post = await Post.findOne({
+      where: { id: newPost.id },
+      include: User
+    });
+
     res.status(201).json({ post });
   } catch (err) {
     next(err);
@@ -46,12 +51,45 @@ exports.getAllPostIncludeFriend = async (req, res, next) => {
     const posts = await Post.findAll({
       where: { userId: meIncludeFriendsId },
       order: [['createdAt', 'DESC']],
-      include: {
-        model: User
-      }
+      include: [
+        {
+          model: User
+        },
+        {
+          model: Like,
+          include: User
+        }
+      ]
     });
 
     res.status(200).json({ posts });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.toggleLike = async (req, res, next) => {
+  try {
+    const existLike = await Like.findOne({
+      where: {
+        userId: req.user.id,
+        postId: req.params.postId
+      }
+    });
+
+    if (existLike) {
+      // await Like.destroy({
+      //   where: {
+      //     userId: req.user.id,
+      //     postId: req.params.postId
+      //   }
+      // });
+      await existLike.destroy();
+    } else {
+      await Like.create({ userId: req.user.id, postId: req.params.postId });
+    }
+
+    res.status(201).json({ message: 'success' });
   } catch (err) {
     next(err);
   }
